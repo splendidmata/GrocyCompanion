@@ -11,7 +11,8 @@ Config Grocy in the web interface.
 - Add API keys for GrocyCompanion: `Settings` - `Manage API keys` - `Add`
 - Config your locations: `Manage master Data` - `Locations` - `Add`
 - Add GDSInfo attribute to products: `Manage master Data`- `Userfields`- `Add`- Form Information: Entity: products; Name GDSInfo; Title: GDSInfo; Type: Single line text, check “Show this column in table”.
-![image](https://github.com/sliveysun/GrocyCompanion/assets/1631565/965d5bfe-eeba-411b-ac6b-579a37d7c9ad)
+![image (1)](https://github.com/sliveysun/GrocyCompanion/assets/1631565/164ebd98-29a0-4b32-837d-0a2801b5696b)
+
 - Configure Quantity units: `Manage master Data`-`Quantity units` - `Add`
 
 ```shell
