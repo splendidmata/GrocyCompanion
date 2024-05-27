@@ -3,13 +3,32 @@
 import requests
 import logging
 import json
+import subprocess
+import tempfile
+import os
 
-# import time
-# from pyvirtualdisplay import Display
-# from DrissionPage.easy_set import set_paths, set_headless
-# from DrissionPage import ChromiumPage, ChromiumOptions
+logging.basicConfig(level=logging.DEBUG)
 
-logging.basicConfig(level=logging.INFO)
+def download_and_read_file(url):
+    # 创建临时文件
+    temp_file_path = tempfile.mktemp()
+    try:
+        # 使用 wget 下载文件到临时文件路径，并且在静默模式下执行
+        subprocess.run(["wget", "-q", "-O", temp_file_path, url], check=True)
+        # 读取文件内容
+        with open(temp_file_path, 'r') as file:
+            file_content = file.read()
+            return file_content  # 在这里你可以对文件内容进行处理
+    finally:
+        # 删除临时文件
+        os.remove(temp_file_path)
+
+def download_img_file(url, file_path):
+    try:
+        # 使用 wget 下载文件到临时文件路径，并且在静默模式下执行
+        subprocess.run(["wget", "-q", "-O", file_path, url], check=True)
+    except:
+        print("exception when downloading img file")
 
 class BarCodeSpider:
     '''
@@ -22,33 +41,41 @@ class BarCodeSpider:
         self.logger = logging.getLogger(__name__)
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
         self.base_url = 'https://bff.gds.org.cn/gds/searching-api/ProductService/homepagestatistic'
-        self.domestic_url = "https://bff.gds.org.cn/gds/searching-api/ProductService/ProductListByGTIN"
-        self.domestic_url_simple = "https://bff.gds.org.cn/gds/searching-api/ProductService/ProductSimpleInfoByGTIN"
-        self.imported_url = "https://bff.gds.org.cn/gds/searching-api/ImportProduct/GetImportProductDataForGtin"
+        self.domestic_url = "https://bff.gds.org.cn/gds/searching-api/ProductService/ProductListByGTIN?PageSize=30&PageIndex=1&SearchItem="
+        #self.domestic_url = "https://bff.gds.org.cn/gds/searching-api/ProductService/ProductListByGTIN?PageSize=30&PageIndex=1&Gtin="
+        self.domestic_url_simple = "https://bff.gds.org.cn/gds/searching-api/ProductService/ProductSimpleInfoByGTIN?gtin="
+        #self.domestic_url_simple = "https://bff.gds.org.cn/gds/searching-api/ProductService/ProductSimpleInfoByGTIN"
+        self.imported_url = "https://bff.gds.org.cn/gds/searching-api/ImportProduct/GetImportProductDataForGtin?PageSize=30&PageIndex=1&Gtin="
         self.imported_url_blk = "https://www.barcodelookup.com/"
         self.rapid_api_url = rapid_api_url
         self.x_rapidapi_key = x_rapidapi_key
         self.x_rapidapi_host= x_rapidapi_host
 
+    def fetch_data_from_url(self, url):
+        print(url)
+        content = download_and_read_file(url)
+        if content == "":
+            self.logger.error("url content is empty, url: {}".format(url))
+            return False, ""
+
+        data = json.loads(content)
+        if "Code" not in data or data["Code"] != 1:
+            self.logger.error("Code is not 1, url: {}".format(url))
+            return False, ""
+        return True, data
+
     def get_domestic_good(self, barcode):
-        session = requests.session()
-        session.headers.update({'User-Agent': self.user_agent})
-        response = session.get(self.base_url)
-        if response.status_code != 200:
-            self.logger.error(
-                "error in getting base_url status_code is {}, barcode is {}".format(
-                    response.status_code))
+        state, data = self.fetch_data_from_url(self.base_url)
+        if state == False:
             return None
-        
-        payload = {'PageSize': '30', 'PageIndex': '1', 'SearchItem': str(barcode)}
-        response_domestic_url = session.get(self.domestic_url, params=payload)
-        if response_domestic_url.status_code != 200:
+       
+        state, data = self.fetch_data_from_url(self.domestic_url + barcode)
+        if state == False:
             self.logger.error(
-                "error in getting domestic_url status_code is {}, barcode is {}".format(
-                    response_domestic_url.status_code))
+                "error in getting domestic_url barcode is {}".format(barcode))
             return None
 
-        good = json.loads(response_domestic_url.text)
+        good = data
         if good["Code"] == 2:
             self.logger.error("error, {}, barcode is {}".format(good["Msg"], barcode))
             return None
@@ -57,53 +84,53 @@ class BarCodeSpider:
             return None
 
         base_id = good["Data"]["Items"][0]["base_id"]
-        payload = {'gtin': str(barcode), 'id': base_id}
-        response_domestic_url_simple = session.get(self.domestic_url_simple, params=payload)
-        if response_domestic_url_simple.status_code != 200:
-            return self.rework_good(good["Data"]["Items"][0])
-
-        simpleInfo = json.loads(response_domestic_url_simple.text)
-        if simpleInfo["Code"] != 1:
-            return self.rework_good(good["Data"]["Items"][0])
-        if simpleInfo["Data"] != "":
+        simple_data_url = self.domestic_url_simple + str(barcode) + "&id=" + base_id
+        state, simpleInfo = self.fetch_data_from_url(simple_data_url)
+        if state:
             good["Data"]["Items"][0]["simple_info"] = simpleInfo["Data"]
-            return self.rework_good(good["Data"]["Items"][0])
-        
+        else:
+            self.logger.error("error, failed to get item simple info")
+
+        self.logger.debug("good data, {}".format(good["Data"]["Items"][0]))
+
         return self.rework_good(good["Data"]["Items"][0])
     
     def get_imported_good(self, barcode):
-        session = requests.session()
-        session.headers.update({'User-Agent': self.user_agent})
-        response = session.get(self.base_url)
-        if response.status_code != 200:
+        state, data = self.fetch_data_from_url(self.base_url)
+        if state == False:
+            good_blk = self.get_imorted_good_from_blk(barcode)
+            return good_blk
+       
+        state, data = self.fetch_data_from_url(self.imported_url + barcode)
+        if state == False:
             self.logger.error(
-                "error in getting base_url status_code is {}, barcode is {}".format(
-                    response.status_code, barcode))
+                "error in getting domestic_url barcode is {}".format(barcode))
             good_blk = self.get_imorted_good_from_blk(barcode)
             return good_blk
 
-        payload = {'PageSize': '30', 'PageIndex': '1', 'Gtin': str(barcode), "Description": "", "AndOr": "0"}
-        response_imported_url = session.get(self.imported_url, params=payload)
-        if response_imported_url.status_code != 200:
-            self.logger.error(
-                "error in getting imported_url status_code is {}, barcode is {}".format(
-                    response_imported_url.status_code, barcode))
-            good_blk = self.get_imorted_good_from_blk(barcode)
-            return good_blk
-        
-        good = json.loads(response_imported_url.text)
+        good = data
+        has_good_info = True
+        if good["Code"] == 2:
+            self.logger.error("error, {}, barcode is {}".format(good["Msg"], barcode))
+            has_good_info = False
         if good["Code"] != 1 or good["Data"]["Items"] == []:
             self.logger.error("error, item no found, barcode is {}".format(barcode))
+            has_good_info = False
+
+        if (len(good["Data"]["Items"]) == 1) and (good["Data"]["Items"][0]["description_cn"] == None):
+            has_good_info = False
+
+        if has_good_info == False:
             good_blk = self.get_imorted_good_from_blk(barcode)
             return good_blk
-        
+
         if (len(good["Data"]["Items"]) == 1) and (good["Data"]["Items"][0]["description_cn"] != None):
             return self.rework_good(good["Data"]["Items"][0])
-
+            
         if (len(good["Data"]["Items"]) == 1) and (good["Data"]["Items"][0]["description_cn"] == None):
             good_blk = self.get_imorted_good_from_blk(barcode)
             return good_blk
-          
+            
         if len(good["Data"]["Items"]) >= 2:
             for item in good["Data"]["Items"]:
                 if item["realname"] == item["importer_name"]:
@@ -129,37 +156,6 @@ class BarCodeSpider:
         good["gtin"] = barcode
 
         return good
-
-    '''
-    # Drissionpage method
-    def get_imorted_good_from_blk(self, barcode):
-        good = {}
-
-        display = Display(visible=0, size=(1920, 1080))
-        display.start()
-
-        set_headless(False)
-        set_paths(browser_path='/usr/bin/google-chrome')
-        page = ChromiumPage()
-        page.get(self.imported_url_blk + str(barcode))
-        time.sleep(6)
-        page.get_screenshot(path='page.png', full_page=True)
-        if ("Bad Barcode" in page.title) or ("Not Found" in page.title):
-            print(page.title)
-        else:
-            if "no-image" not in page.ele("xpath://div[@id='largeProductImage']/img").attr("src"):
-                good["picfilename"] = page.ele("xpath://div[@id='largeProductImage']/img").attr("src")
-            good["description_cn"] = page.ele("xpath://div[@id='largeProductImage']/img").attr("alt")
-            good["specification_cn"] = ""
-            specs = page.eles("xpath://ul[@id='product-attributes']/li[@class='product-text']/span")
-            for spec in specs:
-                good["specification_cn"] = good["specification_cn"] + spec.text + ", "
-            good["gtin"] = barcode
-
-        page.quit()
-        display.stop()
-        return good
-    '''
     
     def rework_good(self, good):
         if "id" in good:
@@ -189,12 +185,15 @@ class BarCodeSpider:
             return self.get_imported_good(barcode)
         
 def main():
+    spider = BarCodeSpider(rapid_api_url="https://barcodes1.p.rapidapi.com/", 
+                           x_rapidapi_key='c8d4c9fdeemsh07e3c4573bb3f16p12b0cejsnb4b979735e7c',
+                           x_rapidapi_host="barcodes1.p.rapidapi.com")
     #国产商品
-    # good = BarCodeSpider.get_good('06917878036526')
+    #good = spider.get_good('06917878036526')
     #进口商品
-    # good = BarCodeSpider.get_good('4901201103803')
+    #good = spider.get_good('4901201103803')
     #国际商品
-    good = BarCodeSpider.get_good('3346476426843')
+    good = spider.get_good('3346476426843')
     
     print(good)
 

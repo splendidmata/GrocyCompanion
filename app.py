@@ -3,12 +3,17 @@
 import requests
 import json
 import configparser
+import logging
 
 from rembg import remove
 from flask import Flask, request, jsonify, render_template
 from pygrocy import Grocy, EntityType
 
 from spider.barcode_spider import BarCodeSpider
+from spider.barcode_spider import download_img_file
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -40,9 +45,11 @@ def add_product(dict_good, client):
         "location_id": GROCY_LOCATION[client],
         "qu_id_purchase": GROCY_DEFAULT_QUANTITY_UNIT_ID,
         "qu_id_stock": GROCY_DEFAULT_QUANTITY_UNIT_ID,
+        "qu_id_consume": GROCY_DEFAULT_QUANTITY_UNIT_ID,
+        "qu_id_price": GROCY_DEFAULT_QUANTITY_UNIT_ID,
         "default_best_before_days": GROCY_DEFAULT_BEST_BEFORE_DAYS,
         "default_consume_location_id": GROCY_LOCATION[client],
-        "move_on_open": "1"
+        "move_on_open": "1",
     }
 
     if ("gpc" in dict_good) and dict_good["gpc"]:
@@ -51,6 +58,7 @@ def add_product(dict_good, client):
             data_grocy["default_best_before_days"] = best_before_days
 
     # add product
+    logger.debug("data_grocy, {}".format(data_grocy))
     response_grocy = grocy.add_generic(EntityType.PRODUCTS, data_grocy)
 
     # # add gds info
@@ -83,16 +91,14 @@ def add_product(dict_good, client):
         pic_url = dict_good["picture_filename"]
 
     if pic_url:
+        logger.debug("pic_url:{}".format(pic_url))
         try:
-            response_img = requests.get(pic_url,{'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"})
-            if response_img.status_code == 200:
-                image_data = response_img.content
-                with open("img.png", 'wb') as o:
-                    output_data = remove(image_data)
-                    o.write(output_data)
-            grocy.add_product_pic(int(response_grocy["created_object_id"]),"img.png")
+            download_img_file(pic_url, "img.jpg")
+            grocy.add_product_pic(int(response_grocy["created_object_id"]),"img.jpg")
         except requests.exceptions.RequestException as err:
             print("Request error:", err)
+    else:
+        logger.error("pic_url is empty!!!")
 
     grocy.add_product_by_barcode(dict_good["gtin"],1.0,0.0)
     return True
@@ -159,6 +165,8 @@ def consume():
     try:
         data = request.json
         barcode = data.get("barcode", "")
+        logger.info("barcode:{}".format(barcode))
+        logger.info("request data:{}".format(data))
         grocy.consume_product_by_barcode(barcode)
         response_data = {"message": "Item removed successfully"}
         return jsonify(response_data), 200
@@ -168,4 +176,4 @@ def consume():
         return jsonify(response_data), 400
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9288)
+    app.run(host='0.0.0.0', port=9299)
