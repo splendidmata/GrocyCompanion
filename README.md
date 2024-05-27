@@ -1,16 +1,18 @@
-# 特性
 
-- 条码识别,支持国产商品与进口产品;
-- Grocy物品扫码出库;
-- Grocy已有物品扫码入库,新物品自动获取商品详情并入库;(商品详情包括:条码,基础信息,图片,GPC类别,保质期判别等)
+# Features
 
-# 快速开始
+- Barcode recognition, support Chinese prodcuts and world-wide products.
+- Grocy product consume with barcode scanning
+- Grocy product replenishment with barcode scanning. It can automatically get details of new product and import into Grocy; (product details include: bar code, basic information, pictures, GPC category, shelf-life identification, etc.)
 
-Grocy配置,Web界面中:
-- `设置`-`管理API密钥`-`添加`
-- `管理主数据`-`位置`- 根据自身情况添加
-- `管理主数据`- `自定义字段`- `添加`- 表单信息:实体:products;名称GDSInfo;标题:GDSInfo;类型:单行文本,勾选"在表格中显示此列"
-- 配置`数量单位`：`数量单位`-`添加`
+# Quick Start
+
+Config Grocy in the web interface.
+- Add API keys for GrocyCompanion: `Settings` - `Manage API keys` - `Add`
+- Config your locations: `Manage master Data` - `Locations` - `Add`
+- Add GDSInfo attribute to products: `Manage master Data`- `Userfields`- `Add`- Form Information: Entity: products; Name GDSInfo; Title: GDSInfo; Type: Single line text, check “Show this column in table”.
+![image](https://github.com/sliveysun/GrocyCompanion/assets/1631565/965d5bfe-eeba-411b-ac6b-579a37d7c9ad)
+- Configure Quantity units: `Manage master Data`-`Quantity units` - `Add`
 
 ```shell
 docker pull osnsyc/grocycompanioncn:latest
