@@ -19,7 +19,7 @@ Config Grocy in the web interface.
 docker pull osnsyc/grocycompanioncn:latest
 ```
 
-创建 config.ini 和 docker-compose.yml 文件
+Cereate config.ini
 
 ```ini
 # config.ini
