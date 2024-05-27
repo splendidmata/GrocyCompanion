@@ -43,43 +43,19 @@ bathroom = 6
 X_RapidAPI_Key = YOUR_RapidAPI_API_KEY
 ```
 
-```yml
-# docker-compose.yml
-version: "3"
-services:
-  spider:
-    image: osnsyc/grocycompanioncn:latest
-    restart: always
-    ports:
-      - "9288:9288"
-    volumes:
-      - ./config.ini:/usr/src/app/config.ini
-      # - ./u2net.onnx:/root/.u2net/u2net.onnx
-    networks:
-      - grocy_cn_campanion
+# Run
+- Python app.py
+- view `http://127.0.0.1:9288` in brower, you will get `GrocyCNCompanion Started!`
 
-networks:
-  grocy_cn_campanion:
-```
-
-`u2net.onnx`为rembg的模型,程序第一次运行时会自动下载,下载缓慢的也可[手动下载](https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx),放入`docker-compose.yml`同目录,并反注释以下一行
-```yml
- - ./u2net.onnx:/root/.u2net/u2net.onnx
-```
-```shell
-docker compose up -d
-```
-
-打开`http://127.0.0.1:9288`,看到页面显示`GrocyCNCompanion Started!`,服务已成功运行.
-
-GrocyCompanionCN api测试
+GrocyCompanion API test
 
 ```shell
 curl -X POST -H "Content-Type: application/json" -d '{"client":"temporary_storage","aimid":"]E0","barcode":"8935024140147"}' http://127.0.0.1:9288/add
+# replace 8935024140147 with any barcode of your own product 
 ```
 
-刷新Grocy,出现新物品
-| 12     |    螺丝          |     M2x6                                                                                                                                                            |
-# 鸣谢
+A new product should be added in Grocy
 
-- https://github.com/tenlee2012/BarCodeQuery
+# Acknowledgement
+
+- [https://github.com/tenlee2012/BarCodeQuery](https://github.com/osnsyc/GrocyCompanionCN)
