@@ -6,7 +6,6 @@ import configparser
 import logging
 import os
 from pygrocy import Grocy, EntityType
-from rembg import remove
 from flask import Flask, request, jsonify, render_template
 
 from returns.result import Result, Success, Failure
