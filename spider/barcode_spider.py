@@ -206,7 +206,7 @@ def main():
                         datefmt='%Y-%m-%d %H:%M:%S')
 
     spider = BarCodeSpider(rapid_api_url="https://barcodes1.p.rapidapi.com/", 
-                           x_rapidapi_key='c8d4c9fdeemsh07e3c4573bb3f16p12b0cejsnb4b979735e7c',
+                           x_rapidapi_key='-',
                            x_rapidapi_host="barcodes1.p.rapidapi.com")
     # International commodity
     #good = spider.get_good('3346476426843')
