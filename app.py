@@ -72,8 +72,8 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
     try:
         response_grocy = grocy.add_generic(EntityType.PRODUCTS, data_grocy)
     except Exception as e:
-        logger.error("grocy.add_generic got exception {}".format(str(e)))
-        return Failure("grocy.add_generic got exception {}".format(str(e)))
+        logger.error("grocy.add_generic got exception - status_code: {} message: {}".format(e.status_code, e.message))
+        return Failure("grocy.add_generic got exception - status_code: {} message: {}".format(e.status_code, e.message))
     
     product_id = int(response_grocy["created_object_id"])
     logger.debug("product id is {}".format(product_id))
@@ -89,7 +89,7 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
             json.dumps(dict_good, ensure_ascii=False)
         )
     except Exception as e:
-        logger.error("grocy.set_userfields got exception {}".format(str(e)))
+        logger.error("grocy.set_userfields got exception - status_code: {} message: {}".format(e.status_code, e.message))
     
     # add barcode
     logger.debug("--- add barcode ---")
@@ -112,9 +112,8 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
             logger.debug("data_barcode, {}".format(data_barcode))
             grocy.add_generic(EntityType.PRODUCT_BARCODES, data_barcode)   
     except Exception as e:
-        logger.error("grocy.add_generic - EntityType.PRODUCT_BARCODES got exception {}".format(str(e)))
-        #return Failure("grocy.add_generic - EntityType.PRODUCT_BARCODES got exception {}".format(str(e)))
-
+        logger.error("grocy.add_generic - EntityType.PRODUCT_BARCODES got exception - status_code: {} message: {}".format(e.status_code, e.message))
+        
     # add picture
     logger.debug("--- add pic ---")
 
@@ -132,7 +131,7 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
             if tmp_img_filename:
                 grocy.add_product_pic(product_id, tmp_img_filename)
         except Exception as e:
-            logger.error("grocy.add_product_pic got exception {}".format(str(e)))
+            logger.error("grocy.add_product_pic got exception - status_code: {} message: {}".format(e.status_code, e.message))
         finally:
             if tmp_img_filename:
                 os.remove(tmp_img_filename)   
