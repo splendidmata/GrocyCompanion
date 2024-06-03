@@ -7,9 +7,8 @@ services:
       - "9288:9288"
     volumes:
       - ./config.ini:/usr/src/app/config.ini
-      # - ./u2net.onnx:/root/.u2net/u2net.onnx
     networks:
-      - grocy_cn_campanion
+      - grocy_campanion
 
 networks:
-  grocy_cn_campanion:
+  grocy_campanion:
