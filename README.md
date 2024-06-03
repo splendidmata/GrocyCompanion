@@ -43,9 +43,21 @@ bathroom = 6
 X_RapidAPI_Key = YOUR_RapidAPI_API_KEY
 ```
 
-# Run
-- Python app.py
-- view `http://127.0.0.1:9288` in brower, you will get `GrocyCNCompanion Started!`
+# Run with Python
+1. Configure your python 3.x+ environment.
+2. git clone https://github.com/sliveysun/GrocyCompanion.git and cd to GrocyCompanion/
+3. Create a virtual environment: python3 -m venv venv
+4. Activate the virtual environment: source . /venv/bin/activate
+5. Install dependencies pip install -r requirements.txt
+6. cp config_example.ini config.ini and edit config.ini to match your situation
+7. run server: python app.py
+8. view `http://127.0.0.1:9288` in brower, you will get `GrocyCompanion Started!`
+
+# Run with Docker
+1. git clone https://github.com/sliveysun/GrocyCompanion.git and cd to GrocyCompanion/
+2. mv config_example.ini config.ini and edit config.ini to match your situation
+3. docker-compose up -d （server started on port: 9288）
+4. view `http://127.0.0.1:9288` in brower, you will get `GrocyCompanion Started!`
 
 GrocyCompanion API test
 
@@ -53,7 +65,6 @@ GrocyCompanion API test
 curl -X POST -H "Content-Type: application/json" -d '{"client":"temporary_storage","aimid":"]E0","barcode":"8935024140147"}' http://127.0.0.1:9288/add
 # replace 8935024140147 with any barcode of your own product 
 ```
-
 A new product should be added in Grocy
 
 # Acknowledgement
