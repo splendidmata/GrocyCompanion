@@ -207,7 +207,7 @@ def add():
         result = add_generic_product(good, client)
         if isinstance(result, Success):
             response_data = {"message": "New item added successfully"}
-            return jsonify(response_data), 200
+            logger.debug("New item added successfully")
         else:
             response_data = {"message": "Fail to add new item - {}".format(result.failure())}
             return jsonify(response_data), 400
