@@ -253,4 +253,4 @@ def consume():
         return jsonify(response_data), 400
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=9299)
+    app.run(host='0.0.0.0', port=9288)
