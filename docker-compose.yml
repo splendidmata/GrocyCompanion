@@ -1,7 +1,7 @@
 version: "3"
 services:
   spider:
-    image: osnsyc/grocycompanioncn:latest
+    image: docker.io/library/grocycompanion:latest
     restart: always
     ports:
       - "9288:9288"
