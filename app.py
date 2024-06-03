@@ -107,7 +107,7 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
         if dict_good["gtin"].startswith("0"):
             data_barcode = {
                 "product_id": product_id,
-                "barcode": dict_good["gtin"].strip("0")
+                "barcode": dict_good["gtin"].lstrip("0")
             }
             logger.debug("data_barcode, {}".format(data_barcode))
             grocy.add_generic(EntityType.PRODUCT_BARCODES, data_barcode)   
