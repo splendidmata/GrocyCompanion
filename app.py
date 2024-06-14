@@ -23,7 +23,7 @@ config.read('config.ini')
 GROCY_URL = config.get('Grocy', 'GROCY_URL')
 GROCY_PORT = config.getint('Grocy', 'GROCY_PORT')
 GROCY_API = config.get('Grocy', 'GROCY_API')
-GROCY_DEFAULT_QUANTITY_UNIT_ID = config.getint('Grocy', 'GROCY_DEFAULT_QUANTITY_UNIT_ID')
+GROCY_DEFAULT_QUANTITY_UNIT_ID = config.get('Grocy', 'GROCY_DEFAULT_QUANTITY_UNIT_ID')
 GROCY_DEFAULT_BEST_BEFORE_DAYS = config.get('Grocy', 'GROCY_DEFAULT_BEST_BEFORE_DAYS')
 GROCY_LOCATION = {}
 for key in config['GrocyLocation']:
@@ -158,29 +158,30 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
     logger.debug("--- add_generic_product done ---")
     return Success(True)
 
+
+# gpc code to best_before_days
+best_before_days_dict = {
+    50370000: 7, 50380000: 7, 50350000: 7,
+    50250000: 14, 10000025: 14, 10006970: 14, 10000278: 14, 10006979: 14,
+    50270000: 152, 50310000: 152,
+    94000000: 305, 50000000: 305, 10120000: 305, 10110000: 305,
+    53000000: 1005, 47100000: 1005, 47190000: 1005, 51000000: 1005, 10100000: 1005
+}
+
+code_lookup = {}
+with open('gpc_brick_code.json') as json_file:
+     gpc_data = json.load(json_file)
+
+     for item in gpc_data["Schema"]:
+        code = item["Code"]
+        codes = [code, item.get("Code-1"), item.get("Code-2"), item.get("Code-3")]
+        code_lookup[code] = codes
+
 def gpc_best_before_days(Code):
-    with open('gpc_brick_code.json') as json_file:
-        gpc_data = json.load(json_file)
-
-    best_before_days = {}
-    best_before_days["7"] = [50370000, 50380000, 50350000,]
-    best_before_days["14"] = [50250000, 10000025, 10006970, 10000278, 10006979, ]
-    best_before_days["152"] = [50270000, 50310000,]
-    best_before_days["305"] = [94000000, 50000000, 10120000, 10110000,]
-    best_before_days["670"] = []
-    best_before_days["1005"] = [53000000, 47100000, 47190000, 51000000, 10100000,]
-
-    for item in gpc_data["Schema"]:
-        if item["Code"] == Code:
-            codes = [
-                item["Code"],
-                item["Code-1"],
-                item["Code-2"],
-                item["Code-3"]
-            ]
-            for day, filter_codes in best_before_days.items():
-                if any(code in filter_codes for code in codes):
-                    return day
+    if Code in code_lookup:
+        for code in code_lookup[Code]:
+            if code in best_before_days_dict:
+                return str(best_before_days_dict[code])
     return None
                 
 @app.route('/')

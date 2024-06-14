@@ -77,6 +77,7 @@ class BarCodeSpider:
             self.logger.error("fetch base url failed")
             return Failure("fetch base url failed")
        
+        self.logger.debug("-------get basic info----------")
         state, data = self.fetch_data_from_url(self.domestic_url + barcode)
         if state == False:
             self.logger.error("fetch domestic_url with barcode failed, barcode {}".format(barcode))
@@ -90,6 +91,7 @@ class BarCodeSpider:
             self.logger.error("error, item no found, barcode is {}".format(barcode))
             return Failure("error, item no found, barcode is {}".format(barcode))
 
+        self.logger.debug("-------get simple info----------")
         base_id = good["Data"]["Items"][0]["base_id"]
         simple_data_url = self.domestic_url_simple + str(barcode) + "&id=" + base_id
         state, simpleInfo = self.fetch_data_from_url(simple_data_url)
