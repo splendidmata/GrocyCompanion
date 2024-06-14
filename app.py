@@ -33,6 +33,17 @@ X_RapidAPI_Key = config.get('RapidAPI', 'X_RapidAPI_Key')
 app = Flask(__name__)
 grocy = Grocy(GROCY_URL, GROCY_API, GROCY_PORT, verify_ssl = True)
 
+def get_error_message(e, base_message):
+    status_code = getattr(e, 'status_code', None)
+    message = getattr(e, 'message', None)
+
+    if status_code is not None and message is not None:
+        full_error_message = base_message + " - status_code: {} message: {}".format(e.status_code, e.message)
+    else:
+        full_error_message = "Exception occurred: {}".format(str(e))
+
+    return full_error_message
+
 def add_generic_product(dict_good, client) -> Result[bool, str]:
     logger.info("dict_good, {}".format(dict_good))
     
@@ -52,7 +63,9 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
 
     best_before_days = GROCY_DEFAULT_BEST_BEFORE_DAYS
     if ("gpc" in dict_good) and dict_good["gpc"]:
-        best_before_days = gpc_best_before_days(int(dict_good["gpc"]))
+        estimated_best_before_days = gpc_best_before_days(int(dict_good["gpc"]))
+        if estimated_best_before_days:
+            best_before_days = estimated_best_before_days
         
     data_grocy = {
         "name": good_name,
@@ -72,8 +85,9 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
     try:
         response_grocy = grocy.add_generic(EntityType.PRODUCTS, data_grocy)
     except Exception as e:
-        logger.error("grocy.add_generic got exception - status_code: {} message: {}".format(e.status_code, e.message))
-        return Failure("grocy.add_generic got exception - status_code: {} message: {}".format(e.status_code, e.message))
+        error_message = get_error_message(e, "grocy.add_generic got exception")
+        logger.error(error_message)
+        return Failure(error_message)
     
     product_id = int(response_grocy["created_object_id"])
     logger.debug("product id is {}".format(product_id))
@@ -89,7 +103,8 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
             json.dumps(dict_good, ensure_ascii=False)
         )
     except Exception as e:
-        logger.error("grocy.set_userfields got exception - status_code: {} message: {}".format(e.status_code, e.message))
+        error_message = get_error_message(e, "grocy.set_userfields got exception")
+        logger.error(error_message)
     
     # add barcode
     logger.debug("--- add barcode ---")
@@ -112,7 +127,8 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
             logger.debug("data_barcode, {}".format(data_barcode))
             grocy.add_generic(EntityType.PRODUCT_BARCODES, data_barcode)   
     except Exception as e:
-        logger.error("grocy.add_generic - EntityType.PRODUCT_BARCODES got exception - status_code: {} message: {}".format(e.status_code, e.message))
+        error_message = get_error_message(e, "grocy.add_generic - EntityType.PRODUCT_BARCODES got exception")
+        logger.error(error_message)
         
     # add picture
     logger.debug("--- add pic ---")
@@ -131,7 +147,8 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
             if tmp_img_filename:
                 grocy.add_product_pic(product_id, tmp_img_filename)
         except Exception as e:
-            logger.error("grocy.add_product_pic got exception - status_code: {} message: {}".format(e.status_code, e.message))
+            error_message = get_error_message(e, "grocy.add_product_pic got exception")
+            logger.error(error_message)
         finally:
             if tmp_img_filename:
                 os.remove(tmp_img_filename)   
@@ -164,6 +181,7 @@ def gpc_best_before_days(Code):
             for day, filter_codes in best_before_days.items():
                 if any(code in filter_codes for code in codes):
                     return day
+    return None
                 
 @app.route('/')
 def index():
@@ -192,7 +210,8 @@ def add():
         product = grocy.product_by_barcode(barcode)
         logger.info("product_by_barcode return product id: {} name: {}".format(product.id, product.name))
     except Exception as e:
-        logger.error("status_code: {} message: {}".format(e.status_code, e.message))
+        error_message = get_error_message(e, "grocy.product_by_barcode got exception")
+        logger.error(error_message)
     
     if product is None:
         spider = BarCodeSpider(rapid_api_url="https://barcodes1.p.rapidapi.com/", 
@@ -213,17 +232,21 @@ def add():
             return jsonify(response_data), 400
     
     try:
-        grocy.add_product_by_barcode(barcode, 1.0, 0.0)
+        grocy.add_product_by_barcode(barcode, 1.0, 0.0, get_details = False)
         response_data = {"message": "Item added successfully"}
         return jsonify(response_data), 200
     except Exception as e:
-        logger.error("Fail to add item - status_code: {} message: {}".format(e.status_code, e.message))
-        response_data = {"message": "Fail to add item - status_code: {} message: {}".format(e.status_code, e.message)}
+        error_message = get_error_message(e, "Fail to add item")
+        logger.error(error_message)
+        response_data = {"message": error_message}
         return jsonify(response_data), 400
         
 
 @app.route('/consume', methods=['POST'])
 def consume():
+    data = request.data
+    logger.info("received raw data: {}".format(data))
+
     data = request.json
     client = data.get("client")
     aimid = data.get("aimid")
@@ -248,8 +271,9 @@ def consume():
         response_data = {"message": "Item consume successfully"}
         return jsonify(response_data), 200
     except Exception as e:
-        logger.error("Fail to consume item - status_code: {} message: {}".format(e.status_code, e.message))
-        response_data = {"message": "Fail to consume item - status_code: {} message: {}".format(e.status_code, e.message)}
+        error_message = get_error_message(e, "Fail to consume item")
+        logger.error(error_message)
+        response_data = {"message": error_message}
         return jsonify(response_data), 400
 
 if __name__ == '__main__':
