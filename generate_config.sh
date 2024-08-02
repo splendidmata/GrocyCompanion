@@ -1,53 +1,67 @@
 #!/bin/bash
 
-# 获取用户输入
-read -p "请输入 Grocy URL (例如 http://42.194.226.215): " grocy_url
-read -p "请输入 Grocy 端口: " grocy_port
-read -p "请输入 Grocy API 密钥: " grocy_api
-read -p "请输入默认保质期天数 (例如 365): " grocy_default_best_before_days
+# Get user input
+read -p "Please enter the Grocy URL: " grocy_url
+read -p "Please enter the Grocy port: " grocy_port
+read -p "Please enter the Grocy API key: " grocy_api
+read -p "Please enter the default best before days (e.g., 365): " grocy_default_best_before_days
+read -p "Please enter the RapidAPI key: " rapidapi_key
 
-read -p "请输入 RapidAPI 密钥: " rapidapi_key
-
-# 去掉 Grocy URL 末尾的 '/'
+# Remove trailing '/' from Grocy URL
 grocy_url=${grocy_url%/}
 
-# 获取 GROCY_DEFAULT_QUANTITY_UNIT_ID
+# Get GROCY_DEFAULT_QUANTITY_UNIT_ID
 response=$(curl -s -X 'GET' "${grocy_url}:${grocy_port}/api/objects/quantity_units" \
 -H "accept: application/json" \
 -H "GROCY-API-KEY:${grocy_api}")
 
-# 调试输出：打印获取的数量单位响应
-echo "数量单位响应: $response"
+# Debug output: Print the quantity units response
+echo "Quantity units response: $response"
 
-# 从响应中提取第一个 ID
+# Extract the first ID from the response
 grocy_default_quantity_unit_id=$(echo "$response" | grep -o '"id":[0-9]*' | head -n 1 | grep -o '[0-9]*')
 
-# 调试输出：打印提取的数量单位 ID
-echo "提取的数量单位 ID: $grocy_default_quantity_unit_id"
+# Debug output: Print the extracted quantity unit ID
+echo "Extracted quantity unit ID: $grocy_default_quantity_unit_id"
 
-# 拼出并打印 curl 命令
+# Construct and print the curl command
 location_curl_cmd="curl -s -X 'GET' '${grocy_url}:${grocy_port}/api/objects/locations' -H 'accept: application/json' -H 'GROCY-API-KEY:${grocy_api}'"
-echo "执行的 curl 命令: $location_curl_cmd"
+echo "Executing curl command: $location_curl_cmd"
 
-# 执行 curl 命令获取 GrocyLocation 信息
+# Execute the curl command to get GrocyLocation information
 location_response=$(eval $location_curl_cmd)
 
-# 调试输出：打印获取的位置响应
-echo "位置响应: $location_response"
+# Debug output: Print the location response
+echo "Location response: $location_response"
 
-# 检查是否获取到位置响应
+# Check if the location response is empty
 if [ -z "$location_response" ]; then
-    echo "错误：未能获取到位置响应。请检查URL、端口和API密钥是否正确。"
+    echo "Error: Failed to get location response. Please check the URL, port, and API key."
     exit 1
 fi
 
-# 解析 GrocyLocation 信息
-grocy_locations=$(echo "$location_response" | grep -oE '"id":[0-9]+,"name":"[^"]+"' | sed -E 's/"id":([0-9]+),"name":"([^"]+)"/\2 = \1/')
+# Use Python to decode Unicode escape characters and parse JSON
+grocy_locations=$(echo "$location_response" | python3 -c '
+import sys
+import json
 
-# 调试输出：打印解析的位置信息
-echo "解析的位置信息: $grocy_locations"
+data = json.loads(sys.stdin.read())
+for location in data:
+    name = location["name"]
+    id = location["id"]
+    print(f"{name} = {id}")
+')
 
-# 生成 config.ini 文件
+# Debug output: Print the parsed location information
+echo "Parsed location information: $grocy_locations"
+
+# Check if the parsed location information is empty
+if [ -z "$grocy_locations" ]; then
+    echo "Error: Failed to parse location information. Please check the API response."
+    exit 1
+fi
+
+# Generate the config.ini file
 cat <<EOL > config.ini
 [Grocy]
 GROCY_URL = ${grocy_url}
@@ -63,5 +77,5 @@ ${grocy_locations}
 X_RapidAPI_Key = ${rapidapi_key}
 EOL
 
-echo "配置文件 config.ini 生成成功!"
+echo "Configuration file config.ini generated successfully!"
 
