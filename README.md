@@ -9,7 +9,7 @@
 
 ## 1. Clone project and generate config file
 1. deploy your Grocy service  - then you can get your [Grocy Url], [Grocy Port] and [Grocy API key]
-2. prepair your [X_RapidAPI_Key]
+2. prepair your [X_RapidAPI_Key] - Register for a RapidAPI account, and subscribe (for free) at https://rapidapi.com/Glavier/api/barcodes1/ under the Pricing section, then you can get X_RapidAPI_Key.
 3. git clone https://github.com/sliveysun/GrocyCompanion.git and cd to GrocyCompanion/ 
 4. run ./generate_config.sh, this interactive shell script will generate config.ini file
 
