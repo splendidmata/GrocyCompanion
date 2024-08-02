@@ -7,11 +7,22 @@
 
 # Quick Start
 
+## 0. Config your Grocy
+Config Grocy in the web interface.
+1. Add API keys for GrocyCompanion: `Settings` - `Manage API keys` - `Add`
+2. Config your locations: `Manage master Data` - `Locations` - `Add`
+3. Add GDSInfo attribute to products: `Manage master Data`- `Userfields`- `Add`- Form Information: Entity: products; Name GDSInfo; Caption: GDSInfo; Type: Single line text, check “Show this column in table”.
+
+![image (1)](https://github.com/sliveysun/GrocyCompanion/assets/1631565/164ebd98-29a0-4b32-837d-0a2801b5696b)
+
+5. Configure Quantity units: `Manage master Data`-`Quantity units` - `Add`
+
 ## 1. Clone project and generate config file
 1. deploy your Grocy service  - then you can get your [Grocy Url], [Grocy Port] and [Grocy API key]
 2. prepair your [X_RapidAPI_Key] - Register for a RapidAPI account, and subscribe (for free) at https://rapidapi.com/Glavier/api/barcodes1/ under the Pricing section, then you can get X_RapidAPI_Key.
-3. git clone https://github.com/sliveysun/GrocyCompanion.git and cd to GrocyCompanion/ 
-4. run ./generate_config.sh, this interactive shell script will generate config.ini file
+3. git clone https://github.com/sliveysun/GrocyCompanion.git and cd to GrocyCompanion/
+4. chmod a+x ./generate_config.sh to make it runnable
+5. run ./generate_config.sh, this interactive shell script will generate config.ini file
 
 ## 2. Deploy - 3 choises 
 ### 2.1 Deploy with Portainer
