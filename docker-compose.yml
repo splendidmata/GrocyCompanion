@@ -1,7 +1,7 @@
 version: "3"
 services:
   spider:
-    image: atwoodsun/grocy-companion:1.0.0
+    image: atwoodsun/grocy-companion:1.1.1
     restart: always
     ports:
       - "9288:9288"
