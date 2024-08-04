@@ -251,93 +251,105 @@ def index():
     
     return render_template('index.html', config=config_values)
 
+def verify_parameters(data):
+    device_id = data.get("device_id");
+    device_name = data.get("device_name")
+    aimid = data.get("aimid")
+    barcode = data.get("barcode")
+    count = data.get("count")
+
+    if not device_name:
+        device_name = device_id
+
+    if not device_name:
+        return "Missing or empty 'device_name' and 'device_id' parameter"
+    if not aimid:
+        return "Missing or empty 'aimid' parameter"
+    if not barcode:
+        return "Missing or empty 'barcode' parameter"
+
+    if aimid != "]E0":
+        return "Invalid 'aimid' parameter"
+    return None
+
+@app.route('/api/update-stock', methods=['POST'])
+def update_stock():
+    data = request.json
+    count = data.get("count")
+    if not count:
+        return jsonify({"message": "Missing 'count' parameter"}), 400
+
+
+    if count == "-1":
+        return consume()
+    elif count == "1":
+        return add()
+    else:
+        return jsonify({"message": "Invalid 'count' parameter"}), 400
+    
 @app.route('/add', methods=['POST'])
 def add():
     data = request.json
-    client = data.get("client")
-    aimid = data.get("aimid")
-    barcode = data.get("barcode")
+    error_message = verify_parameters(data)
+    if error_message:
+        return jsonify({"message": error_message}), 400
 
-    # parameter verify
-    if not client:
-        return jsonify({"message": "Missing or empty 'client' parameter"}), 400
-    if not aimid:
-        return jsonify({"message": "Missing or empty 'aimid' parameter"}), 400
-    if not barcode:
-        return jsonify({"message": "Missing or empty 'barcode' parameter"}), 400
-        
-    if aimid != "]E0":
-        return jsonify({"message": "Invalid 'aimid' parameter"}), 400
+    client = data.get("device_name")
+    if not data.get("device_name") :
+       client = data.get("device_id")
+    barcode = data.get("barcode")
         
     product = None
     try:
         product = grocy.product_by_barcode(barcode)
-        logger.info("product_by_barcode return product id: {} name: {}".format(product.id, product.name))
+        logger.info(f"product_by_barcode return product id: {product.id} name: {product.name}")
     except Exception as e:
         error_message = get_error_message(e, "grocy.product_by_barcode got exception")
         logger.error(error_message)
-    
+
     if product is None:
-        spider = BarCodeSpider(rapid_api_url="https://barcodes1.p.rapidapi.com/", 
-                               x_rapidapi_key=X_RapidAPI_Key,
-                               x_rapidapi_host="barcodes1.p.rapidapi.com")
+        spider = BarCodeSpider(
+            rapid_api_url="https://barcodes1.p.rapidapi.com/",
+            x_rapidapi_key=X_RapidAPI_Key,
+            x_rapidapi_host="barcodes1.p.rapidapi.com"
+        )
         good = spider.get_good(barcode)
         if isinstance(good, Failure):
-            response_data = {"message": "Fail to get good info - {}".format(good.failure()) }
-            return jsonify(response_data), 400
-            
+            return jsonify({"message": f"Fail to get good info - {good.failure()}"}), 400
+
         good = good.unwrap()
         result = add_generic_product(good, client)
         if isinstance(result, Success):
-            response_data = {"message": "New item added successfully"}
             logger.debug("New item added successfully")
+            # return jsonify({"message": "New item added successfully"}), 200
         else:
-            response_data = {"message": "Fail to add new item - {}".format(result.failure())}
-            return jsonify(response_data), 400
-    
+            return jsonify({"message": f"Fail to add new item - {result.failure()}"}), 400
+
     try:
-        grocy.add_product_by_barcode(barcode, 1.0, 0.0, get_details = False)
-        response_data = {"message": "Item added successfully"}
-        return jsonify(response_data), 200
+        grocy.add_product_by_barcode(barcode, 1.0, 0.0, get_details=False)
+        return jsonify({"message": "Item added successfully"}), 200
     except Exception as e:
         error_message = get_error_message(e, "Fail to add item")
         logger.error(error_message)
-        response_data = {"message": error_message}
-        return jsonify(response_data), 400
+        return jsonify({"message": error_message}), 400
 
 @app.route('/consume', methods=['POST'])
 def consume():
-    data = request.data
-    logger.info("received raw data: {}".format(data))
-
     data = request.json
-    client = data.get("client")
-    aimid = data.get("aimid")
+    logger.info(f"request data: {data}")
+
+    error_message = verify_parameters(data)
+    if error_message:
+        return jsonify({"message": error_message}), 400
+
     barcode = data.get("barcode")
-    
-    logger.info("request data:{}".format(data))
-    logger.info("barcode:{}".format(barcode))
-    
-    # parameter verify
-    if not client:
-        return jsonify({"message": "Missing or empty 'client' parameter"}), 400
-    if not aimid:
-        return jsonify({"message": "Missing or empty 'aimid' parameter"}), 400
-    if not barcode:
-        return jsonify({"message": "Missing or empty 'barcode' parameter"}), 400
-        
-    if aimid != "]E0":
-        return jsonify({"message": "Invalid 'aimid' parameter"}), 400
-        
     try:
         grocy.consume_product_by_barcode(barcode)
-        response_data = {"message": "Item consume successfully"}
-        return jsonify(response_data), 200
+        return jsonify({"message": "Item consumed successfully"}), 200
     except Exception as e:
         error_message = get_error_message(e, "Fail to consume item")
         logger.error(error_message)
-        response_data = {"message": error_message}
-        return jsonify(response_data), 400
+        return jsonify({"message": error_message}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9288)
