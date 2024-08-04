@@ -5,33 +5,48 @@ import json
 import configparser
 import logging
 import os
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from pygrocy import Grocy, EntityType
-from flask import Flask, request, jsonify, render_template
-
 from returns.result import Result, Success, Failure
 
 from spider.barcode_spider import BarCodeSpider
 from spider.barcode_spider import download_img_file
+from config_handler import generate_config
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)                        
-                        
-config = configparser.ConfigParser()
-config.read('config.ini')
-GROCY_URL = config.get('Grocy', 'GROCY_URL')
-GROCY_PORT = config.getint('Grocy', 'GROCY_PORT')
-GROCY_API = config.get('Grocy', 'GROCY_API')
-GROCY_DEFAULT_QUANTITY_UNIT_ID = config.get('Grocy', 'GROCY_DEFAULT_QUANTITY_UNIT_ID')
-GROCY_DEFAULT_BEST_BEFORE_DAYS = config.get('Grocy', 'GROCY_DEFAULT_BEST_BEFORE_DAYS')
-GROCY_LOCATION = {}
-for key in config['GrocyLocation']:
-    GROCY_LOCATION[key] = config.get('GrocyLocation', key)
-X_RapidAPI_Key = config.get('RapidAPI', 'X_RapidAPI_Key')
 
 app = Flask(__name__)
-grocy = Grocy(GROCY_URL, GROCY_API, GROCY_PORT, verify_ssl = True)
+app.secret_key = os.urandom(24)  # 或者使用你自己的强随机字符串
+
+def load_config():
+    config = configparser.ConfigParser()
+    config_path = os.environ.get('CONFIG_PATH')
+    if not config_path:
+        raise FileNotFoundError("CONFIG_PATH environment variable not set")
+    config.read(config_path)
+    return config
+
+def save_config(config):
+    config_path = os.environ.get('CONFIG_PATH')
+    with open(config_path, 'w') as configfile:
+        config.write(configfile)
+
+def update_config():
+    global GROCY_URL, GROCY_PORT, GROCY_API, GROCY_DEFAULT_QUANTITY_UNIT_ID, GROCY_DEFAULT_BEST_BEFORE_DAYS, GROCY_LOCATION, X_RapidAPI_Key, grocy
+    config = load_config()
+    GROCY_URL = config.get('Grocy', 'GROCY_URL')
+    GROCY_PORT = config.getint('Grocy', 'GROCY_PORT')
+    GROCY_API = config.get('Grocy', 'GROCY_API')
+    GROCY_DEFAULT_QUANTITY_UNIT_ID = config.get('Grocy', 'GROCY_DEFAULT_QUANTITY_UNIT_ID')
+    GROCY_DEFAULT_BEST_BEFORE_DAYS = config.get('Grocy', 'GROCY_DEFAULT_BEST_BEFORE_DAYS')
+    GROCY_LOCATION = {key: config.get('GrocyLocation', key) for key in config['GrocyLocation']}
+    X_RapidAPI_Key = config.get('RapidAPI', 'X_RapidAPI_Key')
+    grocy = Grocy(GROCY_URL, GROCY_API, GROCY_PORT, verify_ssl=True)
+
+update_config()
 
 def get_error_message(e, base_message):
     status_code = getattr(e, 'status_code', None)
@@ -184,9 +199,33 @@ def gpc_best_before_days(Code):
                 return str(best_before_days_dict[code])
     return None
                 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template("index.html")
+    if request.method == 'POST':
+        grocy_url = request.form['grocy_url']
+        grocy_port = request.form['grocy_port']
+        grocy_api = request.form['grocy_api']
+        grocy_default_best_before_days = request.form['grocy_default_best_before_days']
+        rapidapi_key = request.form['rapidapi_key']
+        
+        try:
+            generate_config(grocy_url, grocy_port, grocy_api, grocy_default_best_before_days, rapidapi_key)
+            flash('Configuration updated successfully!', 'success')
+        except Exception as e:
+            flash(f'Error: {e}', 'danger')
+        
+        return redirect(url_for('index'))
+    # GET
+    config = load_config()
+    config_values = {
+        'grocy_url': config.get('Grocy', 'GROCY_URL', fallback=''),
+        'grocy_port': config.get('Grocy', 'GROCY_PORT', fallback=''),
+        'grocy_api': config.get('Grocy', 'GROCY_API', fallback=''),
+        'grocy_default_best_before_days': config.get('Grocy', 'GROCY_DEFAULT_BEST_BEFORE_DAYS', fallback=''),
+        'rapidapi_key': config.get('RapidAPI', 'X_RapidAPI_Key', fallback='')
+    }
+    
+    return render_template('index.html', config=config_values)
 
 @app.route('/add', methods=['POST'])
 def add():
@@ -241,7 +280,6 @@ def add():
         logger.error(error_message)
         response_data = {"message": error_message}
         return jsonify(response_data), 400
-        
 
 @app.route('/consume', methods=['POST'])
 def consume():
