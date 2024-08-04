@@ -21,6 +21,18 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # 或者使用你自己的强随机字符串
 
+def read_and_log_file(file_path):
+    try:
+        # Step 2: Read the file content
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        
+        # Step 3: Log the content using logger.error
+        logger.error(f"File content of {file_path}:\n{content}")
+    
+    except Exception as e:
+        logger.error(f"Error reading file {file_path}: {e}")
+
 def load_config():
     config = configparser.ConfigParser()
     config_path = os.environ.get('CONFIG_PATH')
@@ -209,7 +221,8 @@ def index():
         rapidapi_key = request.form['rapidapi_key']
         
         try:
-            generate_config(grocy_url, grocy_port, grocy_api, grocy_default_best_before_days, rapidapi_key)
+            config_path = os.environ.get('CONFIG_PATH')
+            generate_config(logger, config_path, grocy_url, grocy_port, grocy_api, grocy_default_best_before_days, rapidapi_key)
             flash('Configuration updated successfully!', 'success')
         except Exception as e:
             flash(f'Error: {e}', 'danger')
