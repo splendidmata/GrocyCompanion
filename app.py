@@ -233,6 +233,7 @@ def index():
         try:
             config_path = os.environ.get('CONFIG_PATH')
             generate_config(logger, config_path, grocy_url, grocy_port, grocy_api, grocy_default_best_before_days, rapidapi_key)
+            update_config()
             flash('Configuration updated successfully!', 'success')
         except Exception as e:
             flash(f'Error: {e}', 'danger')
