@@ -1,12 +1,12 @@
 version: "3"
 services:
-  spider:
-    image: atwoodsun/grocy-companion:1.1.1
+  grocy-companion:
+    image: atwoodsun/grocy-companion:1.2.5
     restart: always
     ports:
       - "9288:9288"
-    volumes:
-      - ./config.ini:/usr/src/app/config.ini
+    environment:
+      - CONFIG_PATH=/usr/src/app/config/config.ini
     networks:
       - grocy_campanion
 
