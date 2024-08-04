@@ -21,6 +21,16 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # 或者使用你自己的强随机字符串
 
+# 定义全局变量
+GROCY_URL = None
+GROCY_PORT = None
+GROCY_API = None
+GROCY_DEFAULT_QUANTITY_UNIT_ID = None
+GROCY_DEFAULT_BEST_BEFORE_DAYS = None
+GROCY_LOCATION = {}
+X_RapidAPI_Key = None
+grocy = None
+
 def read_and_log_file(file_path):
     try:
         # Step 2: Read the file content
