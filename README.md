@@ -26,26 +26,16 @@ Config Grocy in the web interface.
 
 ## 2. Deploy - 3 choises 
 ### 2.1 Deploy with Portainer
-1. cd to GrocyCompanion/
-2. edit volumnes config in docker-compose.yml
+1. download docker-compose.yml
+2. Portainer -> Stacks -> Add stack -> input a name for stack -> select Build method / upload -> upload docker-compose.yml -> Deploy the stack -> Done!
+3. view `http://127.0.0.1:9288` in browser, then you can config the server and save
+![image](https://github.com/user-attachments/assets/73f3e659-38df-4f56-9a50-d50c14bea5de)
 
-chang from:
-```yml
-volumes:
-  - ./config.ini:/usr/src/app/config.ini to
-```
-to:
-```yml
-volumes:
-  - [ABSOLUTE_PATH_TO]/GrocyCompanion/config.ini:/usr/src/app/config.ini
-```
-3. download docker-compose.yml to your local
-4. Portainer -> Stacks -> Add stack -> input a name for stack -> select Build method / upload -> upload docker-compose.yml -> Deploy the stack -> Done!
 
 ### 2.2 Deploy with Docker
 1. cd to GrocyCompanion/
 2. docker-compose up -d 
-3. view `http://127.0.0.1:9288` in brower, you will get `GrocyCompanion Started!`
+3. view `http://127.0.0.1:9288` in browser, you will get `GrocyCompanion Started!`
 
 ### 2.3 Deploy with Python
 1. Configure your python 3.x+ environment.
