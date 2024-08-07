@@ -275,16 +275,21 @@ def verify_parameters(data):
 @app.route('/api/update-stock', methods=['POST'])
 def update_stock():
     data = request.json
+    logger.debug(f"Received request data: {data}")
+
     count = data.get("count")
     if not count:
+        logger.debug("Missing 'count' parameter")
         return jsonify({"message": "Missing 'count' parameter"}), 400
 
-
     if count == "-1":
+        logger.debug("Entering consume branch")
         return consume()
     elif count == "1":
+        logger.debug("Entering add branch")
         return add()
     else:
+        logger.debug(f"Invalid 'count' parameter: {count}")
         return jsonify({"message": "Invalid 'count' parameter"}), 400
     
 @app.route('/add', methods=['POST'])
