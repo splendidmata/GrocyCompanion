@@ -268,8 +268,9 @@ def verify_parameters(data):
     if not barcode:
         return "Missing or empty 'barcode' parameter"
 
-    if aimid != "]E0":
-        return "Invalid 'aimid' parameter"
+    #if aimid != "]E0":
+    #    return "Invalid 'aimid' parameter"
+        
     return None
 
 @app.route('/api/update-stock', methods=['POST'])
