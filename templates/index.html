@@ -76,31 +76,41 @@
             background-color: #f2dede;
             border-color: #ebccd1;
         }
+		.error {
+            color: red;
+            font-size: 12px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2 class="mt-5">Configure GrocyCompanion</h2>
-        <form method="POST">
+        <form id="configForm" method="POST">
             <div class="form-group">
                 <label for="grocy_url">Grocy URL</label>
                 <input type="text" id="grocy_url" name="grocy_url" value="{{ config.grocy_url }}" required>
+                <small class="error" id="grocyUrlError">Must be starts with HTTP/HTTPS and without a port number.</small>
             </div>
             <div class="form-group">
                 <label for="grocy_port">Grocy Port</label>
-                <input type="text" id="grocy_port" name="grocy_port" value="{{ config.grocy_port }}" required>
+                <input type="text" id="grocy_port" name="grocy_port" value="{{ config.grocy_port }}">
+                <small class="error" id="grocyPortError">Must be a valid port number (1-65535) or empty.</small>
             </div>
             <div class="form-group">
                 <label for="grocy_api">Grocy API Key</label>
                 <input type="text" id="grocy_api" name="grocy_api" value="{{ config.grocy_api }}" required>
+                <small class="error" id="grocyApiError">API Key cannot be empty.</small>
             </div>
             <div class="form-group">
                 <label for="grocy_default_best_before_days">Default Best Before Days</label>
                 <input type="text" id="grocy_default_best_before_days" name="grocy_default_best_before_days" value="{{ config.grocy_default_best_before_days }}" required>
+                <small class="error" id="bestBeforeDaysError">Must be a positive integer.</small>
             </div>
             <div class="form-group">
                 <label for="rapidapi_key">RapidAPI Key</label>
                 <input type="text" id="rapidapi_key" name="rapidapi_key" value="{{ config.rapidapi_key }}" required>
+                <small class="error" id="rapidApiKeyError">API Key cannot be empty.</small>
             </div>
             <div class="input-button-container">
                 <input type="submit" value="Save Configuration">
@@ -116,5 +126,24 @@
             {% endif %}
         {% endwith %}
     </div>
+
+    <script>
+        document.getElementById('configForm').addEventListener('input', function() {
+            const urlRegex = /^(http|https):\/\/[^ "]+$/i;
+            const portRegex = /^([1-9][0-9]{0,4}|0)?$/;
+            const grocyUrl = document.getElementById('grocy_url').value.trim();
+            const grocyPort = document.getElementById('grocy_port').value.trim();
+            const grocyApi = document.getElementById('grocy_api').value.trim();
+            const bestBeforeDays = parseInt(document.getElementById('grocy_default_best_before_days').value, 10);
+            const rapidApiKey = document.getElementById('rapidapi_key').value.trim();
+
+            const urlWithoutProtocol = grocyUrl.split('//').pop();
+            document.getElementById('grocyUrlError').style.display = (urlRegex.test(grocyUrl) && !urlWithoutProtocol.includes(':')) ? 'none' : 'block';
+            document.getElementById('grocyPortError').style.display = (portRegex.test(grocyPort) && (grocyPort === '' || (grocyPort >= 1 && grocyPort <= 65535))) ? 'none' : 'block';
+            document.getElementById('grocyApiError').style.display = grocyApi ? 'none' : 'block';
+            document.getElementById('bestBeforeDaysError').style.display = (bestBeforeDays > 0) ? 'none' : 'block';
+            document.getElementById('rapidApiKeyError').style.display = rapidApiKey ? 'none' : 'block';
+        });
+    </script>
 </body>
 </html>
