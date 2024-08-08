@@ -4,6 +4,24 @@ import logging
 
 def generate_config(logger, config_path, grocy_url, grocy_port, grocy_api, grocy_default_best_before_days, rapidapi_key):
     try:
+        if not grocy_url.startswith("http://") and not grocy_url.startswith("https://"):
+            raise ValueError("grocy_url must be a valid HTTP/HTTPS URL.")
+        
+        if ":" in grocy_url.split("//")[-1]:
+            raise ValueError("grocy_url should not contain a port number.")
+
+        if not isinstance(grocy_port, int) or not (0 < grocy_port < 65536):
+            raise ValueError("grocy_port must be a valid port number (1-65535).")
+
+        if not (isinstance(grocy_default_best_before_days, int) and grocy_default_best_before_days > 0):
+            raise ValueError("grocy_default_best_before_days must be a positive integer.")
+
+        if not grocy_api:
+            raise ValueError("grocy_api cannot be empty.")
+
+        if not rapidapi_key:
+            raise ValueError("rapidapi_key cannot be empty.")
+            
         grocy_url = grocy_url.rstrip('/')
 
         response = requests.get(f"{grocy_url}:{grocy_port}/api/objects/quantity_units", headers={
@@ -35,14 +53,23 @@ def generate_config(logger, config_path, grocy_url, grocy_port, grocy_api, grocy
         with open(config_path, 'w') as configfile:
             config.write(configfile)
 
-    except requests.RequestException as e:
-        logger.error(f"HTTP error occurred: {e}")
+    except ValueError as e:
+        if logger:
+            logger.error(f"Validation error: {e}")
+        else:
+            print(f"Validation error: {e}")
         raise
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON decode error: {e}")
+    except requests.RequestException as e:
+        if logger:
+            logger.error(f"HTTP error occurred: {e}")
+        else:
+            print(f"HTTP error occurred: {e}")
         raise
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        if logger:
+            logger.error(f"An unexpected error occurred: {e}")
+        else:
+            print(f"An unexpected error occurred: {e}")
         raise
 
 def test_generate_config():
