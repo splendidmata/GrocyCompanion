@@ -68,5 +68,4 @@ curl -X POST -H "Content-Type: application/json" -d '{"device_id":"1234", "devic
 ```
 
 # Acknowledgement
-
 - [https://github.com/tenlee2012/BarCodeQuery](https://github.com/osnsyc/GrocyCompanionCN)
