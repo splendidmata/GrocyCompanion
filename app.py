@@ -126,8 +126,7 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
     error_message = ''
     for suffix in suffixes:
         try:
-            if suffix:  # 如果有后缀，添加到 good_name
-                data_grocy['good_name'] += suffix
+            data_grocy['name'] += suffix
             response_grocy = grocy.add_generic(EntityType.PRODUCTS, data_grocy)
             add_generic_success = True
             break  # 成功后退出循环
