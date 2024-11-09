@@ -1,7 +1,7 @@
 version: "3"
 services:
   grocy-companion:
-    image: atwoodsun/grocy-companion:1.3.4
+    image: atwoodsun/grocy-companion:1.3.6
     restart: always
     ports:
       - "9288:9288"
