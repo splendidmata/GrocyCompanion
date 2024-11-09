@@ -119,11 +119,23 @@ def add_generic_product(dict_good, client) -> Result[bool, str]:
 
     # add new product
     logger.debug("data_grocy, {}".format(data_grocy))
-    try:
-        response_grocy = grocy.add_generic(EntityType.PRODUCTS, data_grocy)
-    except Exception as e:
-        error_message = get_error_message(e, "grocy.add_generic got exception")
-        logger.error(error_message)
+
+    suffixes = ['', '_01', '_02']  # 尝试使用的后缀列表
+    add_generic_success = False
+    response_grocy = None
+    error_message = ''
+    for suffix in suffixes:
+        try:
+            if suffix:  # 如果有后缀，添加到 good_name
+                data_grocy['good_name'] += suffix
+            response_grocy = grocy.add_generic(EntityType.PRODUCTS, data_grocy)
+            add_generic_success = True
+            break  # 成功后退出循环
+        except Exception as e:
+            error_message = get_error_message(e, f"grocy.add_generic got exception with '{suffix}' suffix")
+            logger.error(error_message)
+
+    if not add_generic_success:
         return Failure(error_message)
     
     product_id = int(response_grocy["created_object_id"])
