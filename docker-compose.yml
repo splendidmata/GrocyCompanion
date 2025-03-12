@@ -1,7 +1,7 @@
 version: "3"
 services:
   grocy-companion:
-    image: atwoodsun/grocy-companion:1.3.6
+    image: splendidwrx/grocycompanionmata:latest
     restart: always
     ports:
       - "9288:9288"
